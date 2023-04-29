@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Setup the Prisma client generator
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Configure the PostgreSQL datasource
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define the Restaurant model
+model Restaurant {
+  id          Int       @id @default(autoincrement()) // Unique identifierr
+  name        String // Name of the restaurant
+  main_image  String // Main image URL
+  images      String[] // Array of additional image URLs
+  description String // Restaurant description
+  open_time   String // Opening time
+  close_time  String // Closing time
+  slug        String    @unique // Unique URL slug
+  price       PRICE // Price category (cheap, regular, or expensive)
+  location_id Int // Foreign key for location
+  location    Location  @relation(fields: [location_id], references: [id]) // Relationship to the Location model
+  items       Item[] // Array of related menu items
+  reviews     Review[] // Array of related reviews
+  cuisine_id  Int // Foreign key for cuisine
+  cuisine     Cuisine   @relation(fields: [cuisine_id], references: [id]) // Relationship to the Cuisine model
+  bookings    Booking[] // Array of related bookings
+  tables      Table[] // Array of related tables
+  created_at  DateTime  @default(now()) // Timestamp of creation
+  updated_at  DateTime  @updatedAt // Timestamp of last update
+}
+
+// Define the Item model (menu items)
+model Item {
+  id            Int        @id @default(autoincrement()) // Unique identifier
+  name          String // Name of the menu item
+  price         String // Price of the item
+  description   String // Item description
+  restaurant_id Int // Foreign key for restaurant
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id]) // Relationship to the Restaurant model
+  created_at    DateTime   @default(now()) // Timestamp of creation
+  updated_at    DateTime   @updatedAt // Timestamp of last update
+}
+
+// Define the Location model
+model Location {
+  id          Int          @id @default(autoincrement()) // Unique identifier
+  name        String // Name of the location
+  restaurants Restaurant[] // Array of related restaurants
+  created_at  DateTime     @default(now()) // Timestamp of creation
+  updated_at  DateTime     @updatedAt // Timestamp of last update
+  Cuisine     Cuisine[] // Array of related cuisines
+}
+
+// Define the Cuisine model
+model Cuisine {
+  id          Int          @id @default(autoincrement()) // Unique identifier
+  name        String // Name of the cuisine
+  location_id Int // Foreign key for location
+  location    Location     @relation(fields: [location_id], references: [id]) // Relationship to the Location model
+  restaurants Restaurant[] // Array of related restaurants
+  created_at  DateTime     @default(now()) // Timestamp of creation
+  updated_at  DateTime     @updatedAt // Timestamp of last update
+}
+
+// Define the PRICE enum
+enum PRICE {
+  CHEAP
+  REGULAR
+  EXPENSIVE
+}
+
+// Define the User model
+model User {
+  id         Int      @id @default(autoincrement()) // Unique identifier
+  first_name String // User's first name
+  last_name  String // User's last name
+  city       String // User's city
+  password   String // User's password (hashed)
+  email      String   @unique // User's email address (unique)
+  phone      String // User's phone number
+  reviews    Review[] // Array of related reviews
+  created_at DateTime @default(now()) // Timestamp of creation
+  updated_at DateTime @updatedAt // Timestamp of last update
+}
+
+// Define the Review model
+model Review {
+  id            Int        @id @default(autoincrement()) // Unique identifier
+  first_name    String // Reviewer's first name
+  last_name     String // Reviewer's last name
+  text          String // Review content
+  rating        Float // Review rating (0-5)
+  restaurant_id Int // Foreign key for restaurant
+  restaurant    Restaurant @relation(fields: [restaurant_id], references: [id]) // Relationship to the Restaurant model
+  user_id       Int // Foreign key for user
+  user          User       @relation(fields: [user_id], references: [id]) // Relationship to the User model
+}
+
+// Define the Booking model
+model Booking {
+  id                Int                @id @default(autoincrement()) // Unique identifier
+  number_of_people  Int // Number of people for the booking
+  booking_time      DateTime // Time of the booking
+  booker_email      String // Booker's email address
+  booker_phone      String // Booker's phone number
+  booker_first_name String // Booker's first name
+  booker_last_name  String // Booker's last name
+  booker_occasion   String? // Optional booking occasion
+  booker_request    String? // Optional booking request
+  restaurant_id     Int // Foreign key for restaurant
+  restaurant        Restaurant         @relation(fields: [restaurant_id], references: [id]) // Relationship to the Restaurant model
+  tables            BookingsOnTables[] // Array of related table bookings
+  created_at        DateTime           @default(now()) // Timestamp of creation
+  updated_at        DateTime           @updatedAt // Timestamp of last update
+}
+
+// Define the Table model
+model Table {
+  id            Int                @id @default(autoincrement()) // Unique identifier
+  seats         Int // Number of seats at the table
+  restaurant_id Int // Foreign key for restaurant
+  restaurant    Restaurant         @relation(fields: [restaurant_id], references: [id]) // Relationship to the Restaurant model
+  bookings      BookingsOnTables[] // Array of related table bookings
+  created_at    DateTime           @default(now()) // Timestamp of creation
+  updated_at    DateTime           @updatedAt // Timestamp of last update
+}
+
+// Define the BookingsOnTables model (junction table)
+model BookingsOnTables {
+  booking_id Int // Foreign key for booking
+  booking    Booking  @relation(fields: [booking_id], references: [id]) // Relationship to the Booking model
+  table_id   Int // Foreign key for table
+  table      Table    @relation(fields: [table_id], references: [id]) // Relationship to the Table model
+  created_at DateTime @default(now()) // Timestamp of creation
+  updated_at DateTime @updatedAt // Timestamp of last update
+
+  @@id([booking_id, table_id]) // Composite
+}
